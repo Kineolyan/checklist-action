@@ -1,18 +1,18 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: CheckSwitch
+description: 'GitHub Action using check lists as switches for more actions'
+author: Kineolyan
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
-    required: true
-    default: '1000'
+  delay:
+    description: 'Delay before processing the Pull Request body'
+    required: false
+    default: '10000'
 
 # Define your outputs here.
 outputs:
-  time:
-    description: 'Your output description here'
+  report:
+    description: 'JSON reporting the active switches'
 
 runs:
   using: node20
