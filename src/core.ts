@@ -20,12 +20,16 @@ type SwitchInfo = Readonly<{
   after: boolean
 }>
 
-export async function getPrInfo(): Promise<PrInfo> {
-    const myToken = core.getInput('github-token')
-    const octokit = github.getOctokit(myToken)
+const buildOctokit = () => {
+  const myToken = core.getInput('github-token')
+  // You can also pass in additional options as a second parameter to getOctokit
+  // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
+  return github.getOctokit(myToken)
+}
 
-    // You can also pass in additional options as a second parameter to getOctokit
-    // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
+export async function getPrInfo(): Promise<PrInfo> {
+  const octokit = buildOctokit();
+
     const owner = github.context.repo.owner
     const repo = github.context.repo.repo
     const prNumber = parseInt(github.context.payload?.number, 10)
@@ -34,7 +38,7 @@ export async function getPrInfo(): Promise<PrInfo> {
         repo,
         pull_number: prNumber,
         mediaType: {
-          format: 'diff'
+          format: 'patch'
         }
     })
     return {
@@ -104,12 +108,8 @@ export function rewritePrBody(content: string): string {
 }
 
 export async function updatePr({owner, repo, prNumber, body}: PrInfo) {
-  const newBody = rewritePrBody(body);
-  const myToken = core.getInput('github-token')
-  const octokit = github.getOctokit(myToken)
-
-  // You can also pass in additional options as a second parameter to getOctokit
-  // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
+  const newBody = rewritePrBody(body)
+  const octokit = buildOctokit()
 
    await octokit.rest.pulls.update({
       owner,
