@@ -115,6 +115,6 @@ export async function updatePr({owner, repo, prNumber, body}: PrInfo) {
       owner,
       repo,
       pull_number: prNumber,
-      body
+      body: newBody
   })
 }
