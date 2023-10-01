@@ -2,13 +2,13 @@ import * as core from '@actions/core'
 import { getPrInfo, process, updatePr } from './core'
 
 const delayAction = async (duration: number) => {
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${duration} milliseconds ...`)
+  // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
+  core.debug(`Waiting ${duration} milliseconds ...`)
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(`Start waiting at ${new Date().toTimeString()}`)
-    await new Promise(resolve => setTimeout(resolve, duration));
-    core.debug(`Done waiting at ${new Date().toTimeString()}`)
+  // Log the current timestamp, wait, then log the new timestamp
+  core.debug(`Start waiting at ${new Date().toTimeString()}`)
+  await new Promise(resolve => setTimeout(resolve, duration))
+  core.debug(`Done waiting at ${new Date().toTimeString()}`)
 }
 
 /**
