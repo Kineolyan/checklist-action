@@ -44,6 +44,8 @@ describe('process', () => {
          - [ ] not the correct checkbox char <!-- operate state[v] --> 
          - [x] missing id <!-- state[x] --> 
          - [x] id after state <!-- state[x] id-after-state --> 
+         - [x] line with extra content in the comment <!-- id-after-state state[x] and more --> 
+         - [x] line with content after the comment <!-- id-after-st state[x] --> but followed
     `)
 
     const expectedReport = {
@@ -89,5 +91,9 @@ describe('rewritePrBody', () => {
     expect(output).toEqual(`
        - [x] run operation <!-- run-operation state[x] -->
     `)
+  })
+
+  it('can rewrite multiple lines', () => {
+    
   })
 })
