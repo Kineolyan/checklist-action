@@ -4,6 +4,9 @@ author: Kineolyan
 
 # Define your inputs here.
 inputs:
+  github_token:
+    description: Token for the GitHub API.
+    default: ${{ github.token }}
   delay:
     description: 'Delay before processing the Pull Request body'
     required: false
