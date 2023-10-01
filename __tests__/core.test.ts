@@ -94,6 +94,35 @@ describe('rewritePrBody', () => {
   })
 
   it('can rewrite multiple lines', () => {
-    
+    const output = rewritePrBody(`
+        PR body
+        
+
+        and multiple blocks
+        __________________
+        
+         - [ ] on to off <!-- on-to-off state[x] -->                
+         - [x] on to on <!-- on-to-on state[x] -->                
+         - [ ] off to off <!-- off-to-off state[ ] -->                
+         - [x] off to on <!-- off-to-on state[ ] -->                
+         
+        And we find something after,
+        across multiple lines
+    `)
+    expect(output).toEqual(`
+        PR body
+        
+
+        and multiple blocks
+        __________________
+        
+         - [ ] on to off <!-- on-to-off state[ ] -->                
+         - [x] on to on <!-- on-to-on state[x] -->                
+         - [ ] off to off <!-- off-to-off state[ ] -->                
+         - [x] off to on <!-- off-to-on state[x] -->                
+         
+        And we find something after,
+        across multiple lines
+    `)
   })
 })
