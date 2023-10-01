@@ -13,7 +13,7 @@ export type PrInfo = Readonly<{
   body: string,
 }>
 
-export async getPrInfo(): Promise<PrInfo> {
+export async function getPrInfo(): Promise<PrInfo> {
     const myToken = core.getInput('github-token')
     const octokit = github.getOctokit(myToken)
 
@@ -35,29 +35,27 @@ export async getPrInfo(): Promise<PrInfo> {
       owner,
       repo,
       prNumber,
-      body: data.body,
+      body: pullRequest.body ?? '',
     }
 }
 
-export async process(prBody: string): Promise<Report> {
+export async function gprocess(prBody: string): Promise<Report> {
   return {
     enabled: {},
   }
 }
 
-export async updatePr({owner, repo, prNumber, body}: PrInfo) {
+export async function gupdatePr({owner, repo, prNumber, body}: PrInfo) {
     const myToken = core.getInput('github-token')
     const octokit = github.getOctokit(myToken)
 
     // You can also pass in additional options as a second parameter to getOctokit
     // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
 
-    const { data: pullRequest } = await octokit.rest.pulls.update({
+     await octokit.rest.pulls.update({
         owner,
         repo,
         pull_number: prNumber,
         body
     })
-    return data.body
-
 }
