@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { getPrBody, process, updatePr } from './core'
+import { getPrInfo, process, updatePr } from './core'
 
 const delayAction = async (duration: number) => {
     // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
@@ -20,10 +20,10 @@ export async function run(): Promise<void> {
     const delay: number = parseInt(core.getInput('delay'), 10)
     await delayAction(delay)
 
-    const prBody = await getPrBody()
-    const report = await process()
+    const pr = await getPrInfo()
+    const report = process(pr.body)
     core.setOutput('report', JSON.stringify(report))
-    await updatePr(prBody)
+    await updatePr(pr)
   } catch (error: unknown) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
