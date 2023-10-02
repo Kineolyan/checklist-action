@@ -71,6 +71,9 @@ const findSwitch = (line: string): SwitchInfo | null => {
 }
 
 export function process(prBody: string): Report {
+  core.debug(`Processing body <<<
+  ${prBody}
+  >>>`)
   const lines = prBody.split('\n')
   const switches = lines
     .map(line => findSwitch(line))
