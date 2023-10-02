@@ -9670,10 +9670,12 @@ const buildOctokit = () => {
     return github.getOctokit(myToken);
 };
 async function getPrInfo() {
+    core.debug('Fetching pull-request information');
     const octokit = buildOctokit();
     const owner = github.context.repo.owner;
     const repo = github.context.repo.repo;
     const prNumber = parseInt(github.context.payload?.number, 10);
+    core.debug(`Fetching info on pull-request ${owner}/${repo}#${prNumber}`);
     const { data: pullRequest } = await octokit.rest.pulls.get({
         owner,
         repo,
@@ -9682,6 +9684,7 @@ async function getPrInfo() {
             format: 'patch'
         }
     });
+    core.debug('Pull-request info fetched with success');
     return {
         owner,
         repo,
@@ -9745,6 +9748,7 @@ function rewritePrBody(content) {
 }
 exports.rewritePrBody = rewritePrBody;
 async function updatePr({ owner, repo, prNumber, body }) {
+    core.debug(`Rewriting pull-request body`);
     const newBody = rewritePrBody(body);
     const octokit = buildOctokit();
     await octokit.rest.pulls.update({
@@ -9753,6 +9757,7 @@ async function updatePr({ owner, repo, prNumber, body }) {
         pull_number: prNumber,
         body: newBody
     });
+    core.debug(`Pull-request body updated`);
 }
 exports.updatePr = updatePr;
 
@@ -9810,7 +9815,9 @@ async function run() {
         const pr = await (0, core_1.getPrInfo)();
         const report = (0, core_1.process)(pr.body);
         core.setOutput('report', JSON.stringify(report));
-        await (0, core_1.updatePr)(pr);
+        if (report.hasChanged) {
+            await (0, core_1.updatePr)(pr);
+        }
     }
     catch (error) {
         // Fail the workflow run if an error occurs
