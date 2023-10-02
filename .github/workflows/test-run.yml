@@ -7,8 +7,6 @@ on:
       - reopened
       - edited
       - synchronize
-    branches-ignore:
-      - main
 
 jobs:
   test-bash:
