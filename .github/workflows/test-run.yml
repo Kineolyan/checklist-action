@@ -34,5 +34,7 @@ jobs:
 
       - name: Use output in Python
         id: output-in-python
-        run: python ./examples/use-report.py '${{ steps.read-switches.outputs.report }}'
+        env:
+          CONTENT: ${{ steps.read-switches.outputs.report }}
+        run: python ./examples/use-report.py "$CONTENT"
         shell: sh
