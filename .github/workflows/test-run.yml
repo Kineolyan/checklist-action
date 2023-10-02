@@ -13,10 +13,9 @@ jobs:
     name: Test consuming output from bash
     runs-on: ubuntu-latest
 
-    # permissions:
-      # contents: write
-      # pull-requests: write
-    permissions: write-all
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout
