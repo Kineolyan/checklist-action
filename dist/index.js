@@ -9710,6 +9710,9 @@ const findSwitch = (line) => {
     }
 };
 function process(prBody) {
+    core.debug(`Processing body <<<
+  ${prBody}
+  >>>`);
     const lines = prBody.split('\n');
     const switches = lines
         .map(line => findSwitch(line))
