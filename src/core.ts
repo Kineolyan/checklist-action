@@ -28,11 +28,13 @@ const buildOctokit = () => {
 }
 
 export async function getPrInfo(): Promise<PrInfo> {
+  core.debug('Fetching pull-request information')
   const octokit = buildOctokit()
 
   const owner = github.context.repo.owner
   const repo = github.context.repo.repo
   const prNumber = parseInt(github.context.payload?.number, 10)
+  core.debug(`Fetching info on pull-request ${owner}/${repo}#${prNumber}`)
   const { data: pullRequest } = await octokit.rest.pulls.get({
     owner,
     repo,
@@ -41,6 +43,7 @@ export async function getPrInfo(): Promise<PrInfo> {
       format: 'patch'
     }
   })
+  core.debug('Pull-request info fetched with success')
   return {
     owner,
     repo,
@@ -115,6 +118,7 @@ export async function updatePr({
   prNumber,
   body
 }: PrInfo): Promise<void> {
+  core.debug(`Rewriting pull-request body`)
   const newBody = rewritePrBody(body)
   const octokit = buildOctokit()
 
@@ -124,4 +128,5 @@ export async function updatePr({
     pull_number: prNumber,
     body: newBody
   })
+  core.debug(`Pull-request body updated`)
 }
