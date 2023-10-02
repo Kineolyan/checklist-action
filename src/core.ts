@@ -28,19 +28,19 @@ const buildOctokit = () => {
 }
 
 export async function getPrInfo(): Promise<PrInfo> {
+  core.debug('Fetching pull-request information')
   const octokit = buildOctokit()
 
   const owner = github.context.repo.owner
   const repo = github.context.repo.repo
   const prNumber = parseInt(github.context.payload?.number, 10)
+  core.debug(`Fetching info on pull-request ${owner}/${repo}#${prNumber}`)
   const { data: pullRequest } = await octokit.rest.pulls.get({
     owner,
     repo,
-    pull_number: prNumber,
-    mediaType: {
-      format: 'patch'
-    }
+    pull_number: prNumber
   })
+  core.debug('Pull-request info fetched with success')
   return {
     owner,
     repo,
@@ -68,11 +68,14 @@ const findSwitch = (line: string): SwitchInfo | null => {
 }
 
 export function process(prBody: string): Report {
+  core.debug(`Processing body <<<
+  ${prBody}
+  >>>`)
   const lines = prBody.split('\n')
   const switches = lines
     .map(line => findSwitch(line))
     .filter(found => found !== null)
-    .map(v => v!!)
+    .map(v => v!)
 
   const hasChanged = switches.some(({ before, after }) => before !== after)
   const state = switches.reduce(
@@ -83,7 +86,7 @@ export function process(prBody: string): Report {
     {} as Record<string, boolean>
   )
   return {
-    hasChanged: hasChanged,
+    hasChanged,
     state
   }
 }
@@ -109,7 +112,13 @@ export function rewritePrBody(content: string): string {
     .join('\n')
 }
 
-export async function updatePr({ owner, repo, prNumber, body }: PrInfo) {
+export async function updatePr({
+  owner,
+  repo,
+  prNumber,
+  body
+}: PrInfo): Promise<void> {
+  core.debug(`Rewriting pull-request body`)
   const newBody = rewritePrBody(body)
   const octokit = buildOctokit()
 
@@ -119,4 +128,5 @@ export async function updatePr({ owner, repo, prNumber, body }: PrInfo) {
     pull_number: prNumber,
     body: newBody
   })
+  core.debug(`Pull-request body updated`)
 }

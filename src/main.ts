@@ -23,7 +23,9 @@ export async function run(): Promise<void> {
     const pr = await getPrInfo()
     const report = process(pr.body)
     core.setOutput('report', JSON.stringify(report))
-    await updatePr(pr)
+    if (report.hasChanged) {
+      await updatePr(pr)
+    }
   } catch (error: unknown) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)

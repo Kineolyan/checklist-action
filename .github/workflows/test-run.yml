@@ -1,0 +1,40 @@
+name: Test action live
+
+on:
+  pull_request:
+    types: 
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+jobs:
+  test-bash:
+    name: Test consuming output from bash
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Read switches
+        id: read-switches
+        uses: ./
+        with:
+          delay: 100
+
+      - name: Print Output
+        id: output-in-sh
+        run: echo "${{ steps.read-switches.outputs.report }}"
+
+      - name: Use output in Python
+        id: output-in-python
+        env:
+          CONTENT: ${{ steps.read-switches.outputs.report }}
+        run: python ./examples/use-report.py "$CONTENT"
+        shell: sh
