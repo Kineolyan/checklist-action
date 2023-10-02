@@ -72,7 +72,7 @@ export function process(prBody: string): Report {
   const switches = lines
     .map(line => findSwitch(line))
     .filter(found => found !== null)
-    .map(v => v!!)
+    .map(v => v!)
 
   const hasChanged = switches.some(({ before, after }) => before !== after)
   const state = switches.reduce(
@@ -83,7 +83,7 @@ export function process(prBody: string): Report {
     {} as Record<string, boolean>
   )
   return {
-    hasChanged: hasChanged,
+    hasChanged,
     state
   }
 }
@@ -109,7 +109,12 @@ export function rewritePrBody(content: string): string {
     .join('\n')
 }
 
-export async function updatePr({ owner, repo, prNumber, body }: PrInfo) {
+export async function updatePr({
+  owner,
+  repo,
+  prNumber,
+  body
+}: PrInfo): Promise<void> {
   const newBody = rewritePrBody(body)
   const octokit = buildOctokit()
 
