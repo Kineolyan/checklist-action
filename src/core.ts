@@ -41,7 +41,6 @@ export async function getPrInfo(): Promise<PrInfo> {
     pull_number: prNumber
   })
   core.debug('Pull-request info fetched with success')
-  core.debug(JSON.stringify(pullRequest))
   return {
     owner,
     repo,
