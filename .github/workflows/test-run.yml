@@ -29,24 +29,10 @@ jobs:
           delay: 100
 
       - name: Print Output
-        id: output
+        id: output-in-sh
         run: echo "${{ steps.read-switches.outputs.report }}"
 
-  # test-action:
-  #   name: GitHub Actions Test
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Checkout
-  #       id: checkout
-  #       uses: actions/checkout@v4
-
-  #     - name: Test Local Action
-  #       id: test-action
-  #       uses: ./
-  #       with:
-  #         milliseconds: 1000
-
-  #     - name: Print Output
-  #       id: output
-  #       run: echo "${{ steps.test-action.outputs.time }}"
+      - name: Use output in Python
+        id: output-in-python
+        run: python "${{ steps.read-switches.outputs.report }}"
+        shell: sh
