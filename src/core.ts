@@ -38,12 +38,10 @@ export async function getPrInfo(): Promise<PrInfo> {
   const { data: pullRequest } = await octokit.rest.pulls.get({
     owner,
     repo,
-    pull_number: prNumber,
-    mediaType: {
-      format: 'patch'
-    }
+    pull_number: prNumber
   })
   core.debug('Pull-request info fetched with success')
+  core.debug(JSON.stringify(pullRequest))
   return {
     owner,
     repo,
