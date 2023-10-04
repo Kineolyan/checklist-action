@@ -1,6 +1,13 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 
+export type Config = Readonly<{
+  githubToken: string,
+  delay: number,
+  namespace?: string,
+  captureLabels: boolean,
+}>
+
 export type Report = Readonly<{
   hasChanged: boolean
   state: Record<string, boolean>
@@ -20,16 +27,15 @@ type SwitchInfo = Readonly<{
   after: boolean
 }>
 
-const buildOctokit = () => {
-  const myToken = core.getInput('github-token')
+const buildOctokit = ({githubToken: token}: Config) => {
   // You can also pass in additional options as a second parameter to getOctokit
   // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
-  return github.getOctokit(myToken)
+  return github.getOctokit(token)
 }
 
-export async function getPrInfo(): Promise<PrInfo> {
+export async function getPrInfo(config: Config): Promise<PrInfo> {
   core.debug('Fetching pull-request information')
-  const octokit = buildOctokit()
+  const octokit = buildOctokit(config)
 
   const owner = github.context.repo.owner
   const repo = github.context.repo.repo
@@ -67,7 +73,7 @@ const findSwitch = (line: string): SwitchInfo | null => {
   }
 }
 
-export function process(prBody: string): Report {
+export function process({body: prBody, config}: Readonly<{body: string, config: Config}>): Report {
   core.debug(`Processing body <<<
   ${prBody}
   >>>`)
@@ -112,15 +118,15 @@ export function rewritePrBody(content: string): string {
     .join('\n')
 }
 
-export async function updatePr({
+export async function updatePr({pr: {
   owner,
   repo,
   prNumber,
   body
-}: PrInfo): Promise<void> {
+}, config}: Readonly<{pr: PrInfo, config: Config}>): Promise<void> {
   core.debug(`Rewriting pull-request body`)
   const newBody = rewritePrBody(body)
-  const octokit = buildOctokit()
+  const octokit = buildOctokit(config)
 
   await octokit.rest.pulls.update({
     owner,

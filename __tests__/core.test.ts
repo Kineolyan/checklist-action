@@ -1,12 +1,19 @@
-import { process, rewritePrBody } from '../src/core'
+import { process, rewritePrBody, Config } from '../src/core'
 import { expect } from '@jest/globals'
+
+const cfg: Config = {
+  githubToken: "UNUSED",
+  delay: 0,
+  captureLabels: false
+}
 
 describe('process', () => {
   it('finds a single switch', () => {
-    const report = process(`
+    const body = `
         PR body
          - [ ] run operation <!-- run-operation state[x] -->
-    `)
+    `
+    const report = process({body, config: cfg})
 
     expect(report).toEqual({
       hasChanged: true,
@@ -17,11 +24,12 @@ describe('process', () => {
   })
 
   it('finds multiple switches', () => {
-    const report = process(`
+    const body = `
         PR body
          - [ ] do some random task<!-- do-something state[ ] -->                
          - [x] operate <!-- operate state[x] --> 
-    `)
+    `
+    const report = process({body, config: cfg})
 
     expect(report).toEqual({
       hasChanged: false,
@@ -33,7 +41,7 @@ describe('process', () => {
   })
 
   it('ignores badly-formatted lines', () => {
-    const report = process(`
+    const body = `
         PR body
          - [ ] do some random task<!-- too many words before state[ ] -->                
          - [] not enough space in checkbox <!-- operate state[x] --> 
@@ -46,7 +54,8 @@ describe('process', () => {
          - [x] id after state <!-- state[x] id-after-state --> 
          - [x] line with extra content in the comment <!-- id-after-state state[x] and more --> 
          - [x] line with content after the comment <!-- id-after-st state[x] --> but followed
-    `)
+    `
+    const report = process({body, config: cfg})
 
     const expectedReport = {
       hasChanged: false,

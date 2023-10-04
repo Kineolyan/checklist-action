@@ -1,5 +1,5 @@
 name: CheckSwitch
-description: 'GitHub Action using check lists as switches for more actions'
+description: GitHub Action using check lists as switches for more actions
 author: Kineolyan
 
 # Define your inputs here.
@@ -8,9 +8,14 @@ inputs:
     description: Token for the GitHub API.
     default: ${{ github.token }}
   delay:
-    description: 'Delay before processing the Pull Request body'
+    description: Delay before processing the Pull Request body
     required: false
     default: '10000'
+  capture-labels:
+    description: Capture switch labels along with their state
+    type: boolean
+    required: false
+    default: false
 
 # Define your outputs here.
 outputs:

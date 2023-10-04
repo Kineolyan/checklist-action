@@ -1,9 +1,20 @@
 import * as core from '@actions/core'
-import { getPrInfo, process, updatePr } from './core'
+import { getPrInfo, process, updatePr, Config } from './core'
+
+const readConfig = (): Config => {
+  const token = core.getInput('github-token')
+    const delay: number = parseInt(core.getInput('delay'), 10)
+    const captureLabels = core.getBooleanInput('capture-labels')
+  return {
+    githubToken: token,
+    delay,
+    captureLabels,
+  }
+}
 
 const delayAction = async (duration: number) => {
   // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-  core.debug(`Waiting ${duration} milliseconds ...`)
+  core.info(`Waiting ${duration} milliseconds ...`)
 
   // Log the current timestamp, wait, then log the new timestamp
   core.debug(`Start waiting at ${new Date().toTimeString()}`)
@@ -17,15 +28,22 @@ const delayAction = async (duration: number) => {
  */
 export async function run(): Promise<void> {
   try {
-    const delay: number = parseInt(core.getInput('delay'), 10)
-    await delayAction(delay)
+    const config = readConfig()
+    await delayAction(config.delay)
 
-    const pr = await getPrInfo()
-    const report = process(pr.body)
+    console.info('Collecting PR details')
+    const pr = await getPrInfo(config)
+    console.info('Detecting changes to switches')
+    const report = process({
+      body: pr.body,
+      config,
+    })
     core.setOutput('report', JSON.stringify(report))
     if (report.hasChanged) {
-      await updatePr(pr)
+      console.info('Update PR body to save the new state')
+      await updatePr({pr, config})
     }
+    core.info('Done ! :)')
   } catch (error: unknown) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
