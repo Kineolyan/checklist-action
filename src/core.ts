@@ -2,10 +2,10 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 
 export type Config = Readonly<{
-  githubToken: string,
-  delay: number,
-  namespace?: string,
-  captureLabels: boolean,
+  githubToken: string
+  delay: number
+  namespace?: string
+  captureLabels: boolean
 }>
 
 export type Report = Readonly<{
@@ -24,11 +24,11 @@ export type PrInfo = Readonly<{
 type SwitchInfo = Readonly<{
   id: string
   before: boolean
-  after: boolean,
+  after: boolean
   capture: string
 }>
 
-const buildOctokit = ({githubToken: token}: Config) => {
+const buildOctokit = ({ githubToken: token }: Config) => {
   // You can also pass in additional options as a second parameter to getOctokit
   // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
   return github.getOctokit(token)
@@ -68,14 +68,17 @@ const findSwitch = (line: string): SwitchInfo | null => {
       id: id.trim(),
       before: isEnabled(before),
       after: isEnabled(after),
-      capture: capture.trim(),
+      capture: capture.trim()
     }
   } else {
     return null
   }
 }
 
-export function process({body: prBody, config}: Readonly<{body: string, config: Config}>): Report {
+export function process({
+  body: prBody,
+  config
+}: Readonly<{ body: string; config: Config }>): Report {
   core.debug(`Processing body <<<
   ${prBody}
   >>>`)
@@ -95,19 +98,19 @@ export function process({body: prBody, config}: Readonly<{body: string, config: 
   )
   const output = {
     hasChanged,
-    state,
+    state
   }
   if (config.captureLabels) {
     const captures = switches.reduce(
-    (acc, { id, capture }) => {
-      acc[id] = capture
-      return acc
-    },
-    {} as Record<string, string>
+      (acc, { id, capture }) => {
+        acc[id] = capture
+        return acc
+      },
+      {} as Record<string, string>
     )
-    return {...output, captures}
+    return { ...output, captures }
   } else {
-  return output
+    return output
   }
 }
 
@@ -132,12 +135,10 @@ export function rewritePrBody(content: string): string {
     .join('\n')
 }
 
-export async function updatePr({pr: {
-  owner,
-  repo,
-  prNumber,
-  body
-}, config}: Readonly<{pr: PrInfo, config: Config}>): Promise<void> {
+export async function updatePr({
+  pr: { owner, repo, prNumber, body },
+  config
+}: Readonly<{ pr: PrInfo; config: Config }>): Promise<void> {
   core.debug(`Rewriting pull-request body`)
   const newBody = rewritePrBody(body)
   const octokit = buildOctokit(config)

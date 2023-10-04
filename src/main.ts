@@ -3,12 +3,12 @@ import { getPrInfo, process, updatePr, Config } from './core'
 
 const readConfig = (): Config => {
   const token = core.getInput('github-token')
-    const delay: number = parseInt(core.getInput('delay'), 10)
-    const captureLabels = core.getBooleanInput('capture-labels')
+  const delay: number = parseInt(core.getInput('delay'), 10)
+  const captureLabels = core.getBooleanInput('capture-labels')
   return {
     githubToken: token,
     delay,
-    captureLabels,
+    captureLabels
   }
 }
 
@@ -36,12 +36,12 @@ export async function run(): Promise<void> {
     console.info('Detecting changes to switches')
     const report = process({
       body: pr.body,
-      config,
+      config
     })
     core.setOutput('report', JSON.stringify(report))
     if (report.hasChanged) {
       console.info('Update PR body to save the new state')
-      await updatePr({pr, config})
+      await updatePr({ pr, config })
     }
     core.info('Done ! :)')
   } catch (error: unknown) {

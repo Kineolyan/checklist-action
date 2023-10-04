@@ -2,7 +2,7 @@ import { process, rewritePrBody, Config } from '../src/core'
 import { expect } from '@jest/globals'
 
 const cfg: Config = {
-  githubToken: "UNUSED",
+  githubToken: 'UNUSED',
   delay: 0,
   captureLabels: false
 }
@@ -13,7 +13,7 @@ describe('process', () => {
         PR body
          - [ ] run operation <!-- run-operation state[x] -->
     `
-    const report = process({body, config: cfg})
+    const report = process({ body, config: cfg })
 
     expect(report).toEqual({
       hasChanged: true,
@@ -29,7 +29,7 @@ describe('process', () => {
          - [ ] do some random task<!-- do-something state[ ] -->                
          - [x] operate <!-- operate state[x] --> 
     `
-    const report = process({body, config: cfg})
+    const report = process({ body, config: cfg })
 
     expect(report).toEqual({
       hasChanged: false,
@@ -55,7 +55,7 @@ describe('process', () => {
          - [x] line with extra content in the comment <!-- id-after-state state[x] and more --> 
          - [x] line with content after the comment <!-- id-after-st state[x] --> but followed
     `
-    const report = process({body, config: cfg})
+    const report = process({ body, config: cfg })
 
     const expectedReport = {
       hasChanged: false,
@@ -70,18 +70,18 @@ describe('process', () => {
          - [ ] do some random task<!-- do-something state[ ] -->                
          - [x]    operate   <!-- operate state[x] --> 
     `
-    const report = process({body, config: {...cfg, captureLabels: true}})
+    const report = process({ body, config: { ...cfg, captureLabels: true } })
 
     expect(report).toEqual({
       hasChanged: false,
       state: {
         'do-something': false,
-        operate: true,
+        operate: true
       },
       captures: {
         'do-something': 'do some random task',
-        operate: 'operate',
-      },
+        operate: 'operate'
+      }
     })
   })
 })
