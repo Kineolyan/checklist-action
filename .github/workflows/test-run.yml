@@ -9,8 +9,8 @@ on:
       - synchronize
 
 jobs:
-  test-bash:
-    name: Test consuming output from bash
+  test-with-bash:
+    name: Bash consumption
     runs-on: ubuntu-latest
 
     permissions:
@@ -27,10 +27,30 @@ jobs:
         uses: ./
         with:
           delay: 100
+          capture-labels: true
 
       - name: Print Output
         id: output-in-sh
         run: echo "${{ steps.read-switches.outputs.report }}"
+
+  test-python:
+    name: Python consumption
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Read switches
+        id: read-switches
+        uses: ./
+        with:
+          delay: 100
 
       - name: Use output in Python
         id: output-in-python
