@@ -5,10 +5,13 @@ const readConfig = (): Config => {
   const token = core.getInput('github-token')
   const delay: number = parseInt(core.getInput('delay'), 10)
   const captureLabels = core.getBooleanInput('capture-labels')
+  const userNamespace = core.getInput('namespace')
+  const namespace = userNamespace.trim().length > 0 ? userNamespace : undefined
   return {
     githubToken: token,
     delay,
-    captureLabels
+    captureLabels,
+    namespace
   }
 }
 

@@ -84,6 +84,83 @@ describe('process', () => {
       }
     })
   })
+
+  it('filters switches with a given namespace', () => {
+    const body = `
+      Switches for CI
+      -------
+      
+      - [x] Run tests in a fancy CI system <!-- fancy-test state[ ] -->
+      - [ ] Update changelog <!-- update-changelog state[ ] -->
+      
+      Validation switches
+      -------
+      
+      - [x] Lint: required <!-- validation/lint state[ ] -->
+      - [x] Format: required <!-- validation/format state[ ] -->
+    `
+    const report = process({
+      body,
+      config: { ...cfg, namespace: 'validation' }
+    })
+
+    expect(report).toEqual({
+      hasChanged: true,
+      state: {
+        lint: true,
+        format: true
+      }
+    })
+  })
+
+  it('filters switches without any given namespace', () => {
+    const body = `
+      Switches for CI
+      -------
+      
+      - [x] Run tests in a fancy CI system <!-- fancy-test state[ ] -->
+      - [ ] Update changelog <!-- update-changelog state[ ] -->
+      
+      Validation switches
+      -------
+      
+      - [x] Lint: required <!-- validation/lint state[ ] -->
+      - [x] Format: required <!-- validation/format state[ ] -->
+    `
+    const report = process({ body, config: cfg })
+
+    expect(report).toEqual({
+      hasChanged: true,
+      state: {
+        'fancy-test': true,
+        'update-changelog': false
+      }
+    })
+  })
+
+  it('detect changes only in the considered namespaced switches', () => {
+    const body = `
+      Switches for CI
+      -------
+      
+      - [x] Run tests in a fancy CI system <!-- fancy-test state[ ] -->
+      - [ ] Update changelog <!-- update-changelog state[ ] -->
+      
+      Validation switches
+      -------
+      
+      - [ ] Lint: required <!-- validation/lint state[ ] -->
+      - [x] Format: required <!-- validation/format state[x] -->
+    `
+    const unnamedReport = process({ body, config: cfg })
+    const validationReport = process({
+      body,
+      config: { ...cfg, namespace: 'validation' }
+    })
+
+    expect(unnamedReport.hasChanged).toBeTruthy()
+    expect(validationReport.hasChanged).toBeFalsy()
+  })
 })
 
 describe('rewritePrBody', () => {
