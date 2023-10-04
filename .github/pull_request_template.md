@@ -14,4 +14,4 @@ Switches
 - [x] Run tests in a fancy CI system <!-- fancy-test state[ ] -->
 - [ ] Update changelog <!-- update-changelog state[ ] -->
 
-_More words after, to try to confuse this action.
+_More words after, to try to confuse this action._
