@@ -63,6 +63,27 @@ describe('process', () => {
     }
     expect(report).toEqual(expectedReport)
   })
+
+  it('finds switches and labels', () => {
+    const body = `
+        PR body
+         - [ ] do some random task<!-- do-something state[ ] -->                
+         - [x]    operate   <!-- operate state[x] --> 
+    `
+    const report = process({body, config: {...cfg, captureLabels: true}})
+
+    expect(report).toEqual({
+      hasChanged: false,
+      state: {
+        'do-something': false,
+        operate: true,
+      },
+      captures: {
+        'do-something': 'do some random task',
+        operate: 'operate',
+      },
+    })
+  })
 })
 
 describe('rewritePrBody', () => {

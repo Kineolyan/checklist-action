@@ -24,7 +24,8 @@ export type PrInfo = Readonly<{
 type SwitchInfo = Readonly<{
   id: string
   before: boolean
-  after: boolean
+  after: boolean,
+  capture: string
 }>
 
 const buildOctokit = ({githubToken: token}: Config) => {
@@ -62,11 +63,12 @@ const findSwitch = (line: string): SwitchInfo | null => {
     /^\s*- \[( |x|X)\](.*?)<!-- ([a-zA-Z0-9\-_]+) state\[( |x|X)\] -->\s*$/
   const match = pattern.exec(line)
   if (match) {
-    const [, after, , id, before] = match
+    const [, after, capture, id, before] = match
     return {
       id: id.trim(),
       before: isEnabled(before),
-      after: isEnabled(after)
+      after: isEnabled(after),
+      capture: capture.trim(),
     }
   } else {
     return null
@@ -91,9 +93,21 @@ export function process({body: prBody, config}: Readonly<{body: string, config: 
     },
     {} as Record<string, boolean>
   )
-  return {
+  const output = {
     hasChanged,
-    state
+    state,
+  }
+  if (config.captureLabels) {
+    const captures = switches.reduce(
+    (acc, { id, capture }) => {
+      acc[id] = capture
+      return acc
+    },
+    {} as Record<string, string>
+    )
+    return {...output, captures}
+  } else {
+  return output
   }
 }
 
