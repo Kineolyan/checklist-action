@@ -137,6 +137,30 @@ describe('process', () => {
       }
     })
   })
+
+  it('detect changes only in the considered namespaced switches', () => {
+    const body = `
+      Switches for CI
+      -------
+      
+      - [x] Run tests in a fancy CI system <!-- fancy-test state[ ] -->
+      - [ ] Update changelog <!-- update-changelog state[ ] -->
+      
+      Validation switches
+      -------
+      
+      - [ ] Lint: required <!-- validation/lint state[ ] -->
+      - [x] Format: required <!-- validation/format state[x] -->
+    `
+    const unnamedReport = process({ body, config: cfg })
+    const validationReport = process({
+      body,
+      config: { ...cfg, namespace: 'validation' }
+    })
+
+    expect(unnamedReport.hasChanged).toBeTruthy()
+    expect(validationReport.hasChanged).toBeFalsy()
+  })
 })
 
 describe('rewritePrBody', () => {
