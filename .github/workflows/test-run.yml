@@ -51,6 +51,7 @@ jobs:
         uses: ./
         with:
           delay: 100
+          namespace: validation
 
       - name: Use output in Python
         id: output-in-python
