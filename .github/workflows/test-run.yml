@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-with-bash:
-    name: Test consuming output from bash
+    name: Bash consumption
     runs-on: ubuntu-latest
 
     permissions:
@@ -34,7 +34,7 @@ jobs:
         run: echo "${{ steps.read-switches.outputs.report }}"
 
   test-python:
-    name: Test consuming output from bash
+    name: Python consumption
     runs-on: ubuntu-latest
 
     permissions:
