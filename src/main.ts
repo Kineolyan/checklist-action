@@ -6,12 +6,12 @@ const readConfig = (): Config => {
   const delay: number = parseInt(core.getInput('delay'), 10)
   const captureLabels = core.getBooleanInput('capture-labels')
   const userNamespace = core.getInput('namespace')
-  const namespace = userNamespace.trim().length > 0 ? userNamespace : undefined;
+  const namespace = userNamespace.trim().length > 0 ? userNamespace : undefined
   return {
     githubToken: token,
     delay,
     captureLabels,
-    namespace,
+    namespace
   }
 }
 

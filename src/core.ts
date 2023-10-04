@@ -15,7 +15,10 @@ type NamespaceConfig = Readonly<{
 
 export type Config = Readonly<{
   delay: number
-}> & NamespaceConfig & LabelConfig & GithubConfig
+}> &
+  NamespaceConfig &
+  LabelConfig &
+  GithubConfig
 
 export type Report = Readonly<{
   hasChanged: boolean
@@ -34,7 +37,7 @@ type SwitchInfo = Readonly<{
   id: string
   before: boolean
   after: boolean
-  capture: string,
+  capture: string
   namespace?: string
 }>
 
@@ -79,14 +82,17 @@ const findSwitch = (line: string): SwitchInfo | null => {
       before: isEnabled(before),
       after: isEnabled(after),
       capture: capture.trim(),
-      namespace,
+      namespace
     }
   } else {
     return null
   }
 }
 
-const belongToNamespace = ({ config: { namespace: spec }, switchInfo: { namespace } }: Readonly<{ config: NamespaceConfig, switchInfo: SwitchInfo }>) =>
+const belongToNamespace = ({
+  config: { namespace: spec },
+  switchInfo: { namespace }
+}: Readonly<{ config: NamespaceConfig; switchInfo: SwitchInfo }>) =>
   spec === namespace
 
 export function process({

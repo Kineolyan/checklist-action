@@ -99,14 +99,17 @@ describe('process', () => {
       - [x] Lint: required <!-- validation/lint state[ ] -->
       - [x] Format: required <!-- validation/format state[ ] -->
     `
-    const report = process({body, config: {...cfg, namespace: 'validation'}})
+    const report = process({
+      body,
+      config: { ...cfg, namespace: 'validation' }
+    })
 
     expect(report).toEqual({
       hasChanged: true,
       state: {
         lint: true,
-        format: true,
-      },
+        format: true
+      }
     })
   })
 
@@ -124,14 +127,14 @@ describe('process', () => {
       - [x] Lint: required <!-- validation/lint state[ ] -->
       - [x] Format: required <!-- validation/format state[ ] -->
     `
-    const report = process({body, config: cfg})
+    const report = process({ body, config: cfg })
 
     expect(report).toEqual({
       hasChanged: true,
       state: {
         'fancy-test': true,
-        'update-changelog': false,
-      },
+        'update-changelog': false
+      }
     })
   })
 })
