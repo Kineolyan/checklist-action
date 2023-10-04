@@ -9663,15 +9663,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updatePr = exports.rewritePrBody = exports.process = exports.getPrInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-const buildOctokit = () => {
-    const myToken = core.getInput('github-token');
+const buildOctokit = ({ githubToken: token }) => {
     // You can also pass in additional options as a second parameter to getOctokit
     // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
-    return github.getOctokit(myToken);
+    return github.getOctokit(token);
 };
-async function getPrInfo() {
+async function getPrInfo(config) {
     core.debug('Fetching pull-request information');
-    const octokit = buildOctokit();
+    const octokit = buildOctokit(config);
     const owner = github.context.repo.owner;
     const repo = github.context.repo.repo;
     const prNumber = parseInt(github.context.payload?.number, 10);
@@ -9695,18 +9694,19 @@ const findSwitch = (line) => {
     const pattern = /^\s*- \[( |x|X)\](.*?)<!-- ([a-zA-Z0-9\-_]+) state\[( |x|X)\] -->\s*$/;
     const match = pattern.exec(line);
     if (match) {
-        const [, after, , id, before] = match;
+        const [, after, capture, id, before] = match;
         return {
             id: id.trim(),
             before: isEnabled(before),
-            after: isEnabled(after)
+            after: isEnabled(after),
+            capture: capture.trim()
         };
     }
     else {
         return null;
     }
 };
-function process(prBody) {
+function process({ body: prBody, config }) {
     core.debug(`Processing body <<<
   ${prBody}
   >>>`);
@@ -9720,10 +9720,20 @@ function process(prBody) {
         acc[id] = after;
         return acc;
     }, {});
-    return {
+    const output = {
         hasChanged,
         state
     };
+    if (config.captureLabels) {
+        const captures = switches.reduce((acc, { id, capture }) => {
+            acc[id] = capture;
+            return acc;
+        }, {});
+        return { ...output, captures };
+    }
+    else {
+        return output;
+    }
 }
 exports.process = process;
 const rewritePrLine = (line, { after, before }) => {
@@ -9747,10 +9757,10 @@ function rewritePrBody(content) {
         .join('\n');
 }
 exports.rewritePrBody = rewritePrBody;
-async function updatePr({ owner, repo, prNumber, body }) {
+async function updatePr({ pr: { owner, repo, prNumber, body }, config }) {
     core.debug(`Rewriting pull-request body`);
     const newBody = rewritePrBody(body);
-    const octokit = buildOctokit();
+    const octokit = buildOctokit(config);
     await octokit.rest.pulls.update({
         owner,
         repo,
@@ -9796,9 +9806,19 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const core_1 = __nccwpck_require__(8188);
+const readConfig = () => {
+    const token = core.getInput('github-token');
+    const delay = parseInt(core.getInput('delay'), 10);
+    const captureLabels = core.getBooleanInput('capture-labels');
+    return {
+        githubToken: token,
+        delay,
+        captureLabels
+    };
+};
 const delayAction = async (duration) => {
     // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${duration} milliseconds ...`);
+    core.info(`Waiting ${duration} milliseconds ...`);
     // Log the current timestamp, wait, then log the new timestamp
     core.debug(`Start waiting at ${new Date().toTimeString()}`);
     await new Promise(resolve => setTimeout(resolve, duration));
@@ -9810,14 +9830,21 @@ const delayAction = async (duration) => {
  */
 async function run() {
     try {
-        const delay = parseInt(core.getInput('delay'), 10);
-        await delayAction(delay);
-        const pr = await (0, core_1.getPrInfo)();
-        const report = (0, core_1.process)(pr.body);
+        const config = readConfig();
+        await delayAction(config.delay);
+        console.info('Collecting PR details');
+        const pr = await (0, core_1.getPrInfo)(config);
+        console.info('Detecting changes to switches');
+        const report = (0, core_1.process)({
+            body: pr.body,
+            config
+        });
         core.setOutput('report', JSON.stringify(report));
         if (report.hasChanged) {
-            await (0, core_1.updatePr)(pr);
+            console.info('Update PR body to save the new state');
+            await (0, core_1.updatePr)({ pr, config });
         }
+        core.info('Done ! :)');
     }
     catch (error) {
         // Fail the workflow run if an error occurs
