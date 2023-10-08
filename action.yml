@@ -16,6 +16,10 @@ inputs:
     type: boolean
     required: false
     default: false
+  namespace:
+    description: Define a prefix to filter the collected switches
+    required: false
+    default: ''
 
 # Define your outputs here.
 outputs:

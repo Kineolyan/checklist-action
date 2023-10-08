@@ -9691,21 +9691,23 @@ async function getPrInfo(config) {
 exports.getPrInfo = getPrInfo;
 const isEnabled = (checkChar) => checkChar !== ' ';
 const findSwitch = (line) => {
-    const pattern = /^\s*- \[( |x|X)\](.*?)<!-- ([a-zA-Z0-9\-_]+) state\[( |x|X)\] -->\s*$/;
+    const pattern = /^\s*- \[( |x|X)\](.*?)<!-- (?:([a-zA-Z0-9\-_]+)\/)?([a-zA-Z0-9\-_]+) state\[( |x|X)\] -->\s*$/;
     const match = pattern.exec(line);
     if (match) {
-        const [, after, capture, id, before] = match;
+        const [, after, capture, namespace, id, before] = match;
         return {
             id: id.trim(),
             before: isEnabled(before),
             after: isEnabled(after),
-            capture: capture.trim()
+            capture: capture.trim(),
+            namespace
         };
     }
     else {
         return null;
     }
 };
+const belongToNamespace = ({ config: { namespace: spec }, switchInfo: { namespace } }) => spec === namespace;
 function process({ body: prBody, config }) {
     core.debug(`Processing body <<<
   ${prBody}
@@ -9714,7 +9716,8 @@ function process({ body: prBody, config }) {
     const switches = lines
         .map(line => findSwitch(line))
         .filter(found => found !== null)
-        .map(v => v);
+        .map(v => v)
+        .filter(found => belongToNamespace({ config, switchInfo: found }));
     const changed = switches
         .filter(({ before, after }) => before !== after)
         .map(info => info.id);
@@ -9814,10 +9817,13 @@ const readConfig = () => {
     const token = core.getInput('github-token');
     const delay = parseInt(core.getInput('delay'), 10);
     const captureLabels = core.getBooleanInput('capture-labels');
+    const userNamespace = core.getInput('namespace');
+    const namespace = userNamespace.trim().length > 0 ? userNamespace : undefined;
     return {
         githubToken: token,
         delay,
-        captureLabels
+        captureLabels,
+        namespace
     };
 };
 const delayAction = async (duration) => {

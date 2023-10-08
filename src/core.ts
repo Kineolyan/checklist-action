@@ -1,12 +1,24 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 
-export type Config = Readonly<{
+type GithubConfig = Readonly<{
   githubToken: string
-  delay: number
-  namespace?: string
+}>
+
+type LabelConfig = Readonly<{
   captureLabels: boolean
 }>
+
+type NamespaceConfig = Readonly<{
+  namespace?: string
+}>
+
+export type Config = Readonly<{
+  delay: number
+}> &
+  NamespaceConfig &
+  LabelConfig &
+  GithubConfig
 
 export type Report = Readonly<{
   hasChanged: boolean
@@ -27,15 +39,16 @@ type SwitchInfo = Readonly<{
   before: boolean
   after: boolean
   capture: string
+  namespace?: string
 }>
 
-const buildOctokit = ({ githubToken: token }: Config) => {
+const buildOctokit = ({ githubToken: token }: GithubConfig) => {
   // You can also pass in additional options as a second parameter to getOctokit
   // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
   return github.getOctokit(token)
 }
 
-export async function getPrInfo(config: Config): Promise<PrInfo> {
+export async function getPrInfo(config: GithubConfig): Promise<PrInfo> {
   core.debug('Fetching pull-request information')
   const octokit = buildOctokit(config)
 
@@ -61,20 +74,27 @@ const isEnabled = (checkChar: string) => checkChar !== ' '
 
 const findSwitch = (line: string): SwitchInfo | null => {
   const pattern =
-    /^\s*- \[( |x|X)\](.*?)<!-- ([a-zA-Z0-9\-_]+) state\[( |x|X)\] -->\s*$/
+    /^\s*- \[( |x|X)\](.*?)<!-- (?:([a-zA-Z0-9\-_]+)\/)?([a-zA-Z0-9\-_]+) state\[( |x|X)\] -->\s*$/
   const match = pattern.exec(line)
   if (match) {
-    const [, after, capture, id, before] = match
+    const [, after, capture, namespace, id, before] = match
     return {
       id: id.trim(),
       before: isEnabled(before),
       after: isEnabled(after),
-      capture: capture.trim()
+      capture: capture.trim(),
+      namespace
     }
   } else {
     return null
   }
 }
+
+const belongToNamespace = ({
+  config: { namespace: spec },
+  switchInfo: { namespace }
+}: Readonly<{ config: NamespaceConfig; switchInfo: SwitchInfo }>) =>
+  spec === namespace
 
 export function process({
   body: prBody,
@@ -88,6 +108,7 @@ export function process({
     .map(line => findSwitch(line))
     .filter(found => found !== null)
     .map(v => v!)
+    .filter(found => belongToNamespace({ config, switchInfo: found }))
 
   const changed = switches
     .filter(({ before, after }) => before !== after)
@@ -143,7 +164,7 @@ export function rewritePrBody(content: string): string {
 export async function updatePr({
   pr: { owner, repo, prNumber, body },
   config
-}: Readonly<{ pr: PrInfo; config: Config }>): Promise<void> {
+}: Readonly<{ pr: PrInfo; config: GithubConfig }>): Promise<void> {
   core.debug(`Rewriting pull-request body`)
   const newBody = rewritePrBody(body)
   const octokit = buildOctokit(config)
