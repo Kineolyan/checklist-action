@@ -161,4 +161,20 @@ describe('#run', () => {
     expect(updatePrMock).not.toHaveBeenCalled()
     expect(setFailedMock).not.toHaveBeenCalled()
   })
+  
+  it('reports the error in case of failure during process', async () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': '',
+         'delay': '-1',
+    }))
+    processMock.mockImplementationOnce(() => {
+      throw new Error('oops')
+    })
+    await main.run();
+
+    expect(setOutputMock).not.toHaveBeenCalled()
+    expect(setFailedMock).toHaveBeenCalledWith('oops')
+    
+  })
 })

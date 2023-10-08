@@ -46,11 +46,11 @@ export async function run(): Promise<void> {
       body: pr.body,
       config
     })
-    core.setOutput('report', JSON.stringify(report))
     if (report.hasChanged) {
       console.info('Update PR body to save the new state')
       await updatePr({ pr, config })
     }
+    core.setOutput('report', JSON.stringify(report))
     core.info('Done ! :)')
   } catch (error: unknown) {
     // Fail the workflow run if an error occurs
