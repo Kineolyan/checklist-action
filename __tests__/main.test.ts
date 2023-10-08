@@ -89,20 +89,18 @@ describe('#readConfig', () => {
 describe('#run', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    getPrInfoMock.mockImplementationOnce(() =>
-      Promise.resolve({
-        repo: 'repo',
-        owner: 'owner',
-        prNumber: 124,
-        body: 'body'
-      })
-    )
+    getPrInfoMock.mockImplementationOnce(async () => ({
+      repo: 'repo',
+      owner: 'owner',
+      prNumber: 124,
+      body: 'body'
+    }))
     getBooleanInputMock.mockImplementation(
       mockFromData({
         'capture-labels': true
       })
     )
-    updatePrMock.mockImplementationOnce(() => Promise.resolve())
+    updatePrMock.mockImplementationOnce(async () => {})
   })
 
   it('reports the computed report', async () => {

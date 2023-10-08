@@ -41,6 +41,10 @@ type SwitchInfo = Readonly<{
   namespace?: string
 }>
 
+function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
+  return value !== null && value !== undefined
+}
+
 const buildOctokit = ({ githubToken: token }: GithubConfig) => {
   // You can also pass in additional options as a second parameter to getOctokit
   // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
@@ -105,8 +109,7 @@ export function process({
   const lines = prBody.split('\n')
   const switches = lines
     .map(line => findSwitch(line))
-    .filter(found => found !== null)
-    .map(v => v!)
+    .filter(notEmpty)
     .filter(found => belongToNamespace({ config, switchInfo: found }))
 
   const hasChanged = switches.some(({ before, after }) => before !== after)
