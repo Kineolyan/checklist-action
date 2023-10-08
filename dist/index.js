@@ -9663,6 +9663,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updatePr = exports.rewritePrBody = exports.process = exports.getPrInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+function notEmpty(value) {
+    return value !== null && value !== undefined;
+}
 const buildOctokit = ({ githubToken: token }) => {
     // You can also pass in additional options as a second parameter to getOctokit
     // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
@@ -9715,8 +9718,7 @@ function process({ body: prBody, config }) {
     const lines = prBody.split('\n');
     const switches = lines
         .map(line => findSwitch(line))
-        .filter(found => found !== null)
-        .map(v => v)
+        .filter(notEmpty)
         .filter(found => belongToNamespace({ config, switchInfo: found }));
     const changed = switches
         .filter(({ before, after }) => before !== after)
