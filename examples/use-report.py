@@ -7,7 +7,8 @@ def run(content):
         print('Changes in the PR body')
         
     for k,v in data['state'].items():
-        print(f"id: {k} -> {v}")
+        changed = k in data.changed
+        print(f"id: {k} -> {v} (changed={changed})")
 
 if __name__== "__main__":
     run(sys.argv[1])
