@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { getPrInfo, process, updatePr, Config } from './core'
 
-const readConfig = (): Config => {
+export const readConfig = (): Config => {
   const token = core.getInput('github-token')
   const delay: number = parseInt(core.getInput('delay'), 10)
   const captureLabels = core.getBooleanInput('capture-labels')
@@ -16,6 +16,7 @@ const readConfig = (): Config => {
 }
 
 const delayAction = async (duration: number) => {
+  if (duration > 0) {
   // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
   core.info(`Waiting ${duration} milliseconds ...`)
 
@@ -23,6 +24,9 @@ const delayAction = async (duration: number) => {
   core.debug(`Start waiting at ${new Date().toTimeString()}`)
   await new Promise(resolve => setTimeout(resolve, duration))
   core.debug(`Done waiting at ${new Date().toTimeString()}`)
+  } else {
+    core.info('No delay configured; immediate execution')
+  }
 }
 
 /**
@@ -30,6 +34,7 @@ const delayAction = async (duration: number) => {
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 export async function run(): Promise<void> {
+  core.debug("Let's go")
   try {
     const config = readConfig()
     await delayAction(config.delay)
@@ -51,4 +56,5 @@ export async function run(): Promise<void> {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
   }
+  core.debug('The End!')
 }

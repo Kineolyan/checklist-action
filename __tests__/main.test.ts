@@ -8,78 +8,157 @@
 
 import * as core from '@actions/core'
 import * as main from '../src/main'
+import * as actionCore from '../src/core'
 
 // Mock the GitHub Actions core library
-const debugMock = jest.spyOn(core, 'debug')
 const getInputMock = jest.spyOn(core, 'getInput')
+const getBooleanInputMock = jest.spyOn(core, 'getBooleanInput')
 const setFailedMock = jest.spyOn(core, 'setFailed')
 const setOutputMock = jest.spyOn(core, 'setOutput')
+const getPrInfoMock = jest.spyOn(actionCore, 'getPrInfo')
+const processMock = jest.spyOn(actionCore, 'process')
+const updatePrMock = jest.spyOn(actionCore, 'updatePr')
+const infoMock = jest.spyOn(core, 'info')
 
-// Mock the action's main function
-const runMock = jest.spyOn(main, 'run')
+function mockFromData<T>(data: Readonly<Record<string, T>>): (name: string) => T {
+  return name => {
+    if (name in data) {
+      return data[name]
+    } else {
+          throw new Error(`Unexpected property ${name}`)
+    }
+  }
+}
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
+describe('#readConfig', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
 
-describe('action', () => {
-  it('pass', () => {
-    expect(true).toBeTruthy()
+  it('reads basic config from inputs', () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': '',
+         'delay': '500',
+    }))
+    getBooleanInputMock.mockImplementation(mockFromData({
+      'capture-labels': true,
+    }))
+
+    const config = main.readConfig()
+    expect(config).toEqual({
+      githubToken: 'github-token-for-something',
+      delay: 500,
+      captureLabels: true,
+      namespace: undefined,
+    });
+
+    // Verify that all of the core library functions were called correctly
+    // expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
+    // expect(debugMock).toHaveBeenNthCalledWith(
+    //   2,
+    //   expect.stringMatching(timeRegex)
+    // )
+  })
+
+  it('reads config with namespace', () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': 'the-ns',
+         'delay': '500',
+    }))
+    getBooleanInputMock.mockImplementation(mockFromData({
+      'capture-labels': true,
+    }))
+
+    const config = main.readConfig()
+    expect(config.namespace).toEqual('the-ns');
   })
 })
-// describe('action', () => {
-//   beforeEach(() => {
-//     jest.clearAllMocks()
-//   })
 
-//   it('sets the time output', async () => {
-//     // Set the action's inputs as return values from core.getInput()
-//     getInputMock.mockImplementation((name: string): string => {
-//       switch (name) {
-//         case 'milliseconds':
-//           return '500'
-//         default:
-//           return ''
-//       }
-//     })
+describe('#run', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    getPrInfoMock.mockImplementationOnce(() => Promise.resolve({
+      repo: 'repo',
+      owner: 'owner',
+      prNumber: 124,
+      body: 'body',
+    }))
+    getBooleanInputMock.mockImplementation(mockFromData({
+      'capture-labels': true,
+    }))
+    updatePrMock.mockImplementationOnce(() => Promise.resolve())
+  })
 
-//     await main.run()
-//     expect(runMock).toHaveReturned()
+  it('reports the computed report', async () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': '',
+         'delay': '-1',
+    }))
+    const report = {
+      hasChanged: true,
+      state: {operate: true},
+      changed: ['operate'],
+    }
+    processMock.mockImplementationOnce(() => report)
+    await main.run();
 
-//     // Verify that all of the core library functions were called correctly
-//     expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-//     expect(debugMock).toHaveBeenNthCalledWith(
-//       2,
-//       expect.stringMatching(timeRegex)
-//     )
-//     expect(debugMock).toHaveBeenNthCalledWith(
-//       3,
-//       expect.stringMatching(timeRegex)
-//     )
-//     expect(setOutputMock).toHaveBeenNthCalledWith(
-//       1,
-//       'time',
-//       expect.stringMatching(timeRegex)
-//     )
-//   })
+    expect(setOutputMock).toHaveBeenCalledWith('report', JSON.stringify(report))
+    expect(setFailedMock).not.toHaveBeenCalled()
+  })
 
-//   it('sets a failed status', async () => {
-//     // Set the action's inputs as return values from core.getInput()
-//     getInputMock.mockImplementation((name: string): string => {
-//       switch (name) {
-//         case 'milliseconds':
-//           return 'this is not a number'
-//         default:
-//           return ''
-//       }
-//     })
+  it('waits before processing', async () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': '',
+         'delay': '10',
+    }))
+    const report = {
+      hasChanged: false,
+      state: {operate: true},
+      changed: [],
+    }
+    processMock.mockImplementationOnce(() => report)
+    await main.run();
 
-//     await main.run()
-//     expect(runMock).toHaveReturned()
+    expect(infoMock).toHaveBeenNthCalledWith(1, expect.stringMatching(/waiting 10 milliseconds/i))
+    expect(setFailedMock).not.toHaveBeenCalled()
+  })
 
-//     // Verify that all of the core library functions were called correctly
-//     expect(setFailedMock).toHaveBeenNthCalledWith(
-//       1,
-//       'milliseconds not a number'
-//     )
-//   })
-// })
+  it('does not wait before processing for a negative delay', async () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': '',
+         'delay': '-10',
+    }))
+    const report = {
+      hasChanged: false,
+      state: {operate: true},
+      changed: [],
+    }
+    processMock.mockImplementationOnce(() => report)
+    await main.run();
+
+    expect(infoMock).toHaveBeenNthCalledWith(1, expect.stringMatching(/immediate execution/i))
+    expect(setFailedMock).not.toHaveBeenCalled()
+  })
+  
+  it('does not update the PR if no changes are detected', async () => {
+    getInputMock.mockImplementation(mockFromData({
+        'github-token': 'github-token-for-something',
+         'namespace': '',
+         'delay': '-1',
+    }))
+    processMock.mockImplementationOnce(() => ({
+      hasChanged: false,
+      state: {operate: true},
+      changed: [],
+    }))
+    await main.run();
+
+    expect(updatePrMock).not.toHaveBeenCalled()
+    expect(setFailedMock).not.toHaveBeenCalled()
+  })
+})
