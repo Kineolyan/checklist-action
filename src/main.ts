@@ -17,13 +17,13 @@ export const readConfig = (): Config => {
 
 const delayAction = async (duration: number) => {
   if (duration > 0) {
-  // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-  core.info(`Waiting ${duration} milliseconds ...`)
+    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
+    core.info(`Waiting ${duration} milliseconds ...`)
 
-  // Log the current timestamp, wait, then log the new timestamp
-  core.debug(`Start waiting at ${new Date().toTimeString()}`)
-  await new Promise(resolve => setTimeout(resolve, duration))
-  core.debug(`Done waiting at ${new Date().toTimeString()}`)
+    // Log the current timestamp, wait, then log the new timestamp
+    core.debug(`Start waiting at ${new Date().toTimeString()}`)
+    await new Promise(resolve => setTimeout(resolve, duration))
+    core.debug(`Done waiting at ${new Date().toTimeString()}`)
   } else {
     core.info('No delay configured; immediate execution')
   }
