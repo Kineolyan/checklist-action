@@ -132,7 +132,8 @@ describe('process', () => {
       state: {
         lint: true,
         format: true
-      }
+      },
+      changed: ['format', 'lint'],
     })
   })
 
@@ -157,7 +158,8 @@ describe('process', () => {
       state: {
         'fancy-test': true,
         'update-changelog': false
-      }
+      },
+      changed: ['fancy-test'],
     })
   })
 
