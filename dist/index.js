@@ -9663,6 +9663,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.updatePr = exports.rewritePrBody = exports.process = exports.getPrInfo = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+function notEmpty(value) {
+    return value !== null && value !== undefined;
+}
 const buildOctokit = ({ githubToken: token }) => {
     // You can also pass in additional options as a second parameter to getOctokit
     // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
@@ -9715,8 +9718,7 @@ function process({ body: prBody, config }) {
     const lines = prBody.split('\n');
     const switches = lines
         .map(line => findSwitch(line))
-        .filter(found => found !== null)
-        .map(v => v)
+        .filter(notEmpty)
         .filter(found => belongToNamespace({ config, switchInfo: found }));
     const changed = switches
         .filter(({ before, after }) => before !== after)
@@ -9810,7 +9812,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
+exports.run = exports.readConfig = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const core_1 = __nccwpck_require__(8188);
 const readConfig = () => {
@@ -9826,21 +9828,28 @@ const readConfig = () => {
         namespace
     };
 };
+exports.readConfig = readConfig;
 const delayAction = async (duration) => {
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.info(`Waiting ${duration} milliseconds ...`);
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(`Start waiting at ${new Date().toTimeString()}`);
-    await new Promise(resolve => setTimeout(resolve, duration));
-    core.debug(`Done waiting at ${new Date().toTimeString()}`);
+    if (duration > 0) {
+        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
+        core.info(`Waiting ${duration} milliseconds ...`);
+        // Log the current timestamp, wait, then log the new timestamp
+        core.debug(`Start waiting at ${new Date().toTimeString()}`);
+        await new Promise(resolve => setTimeout(resolve, duration));
+        core.debug(`Done waiting at ${new Date().toTimeString()}`);
+    }
+    else {
+        core.info('No delay configured; immediate execution');
+    }
 };
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
+    core.debug("Let's go");
     try {
-        const config = readConfig();
+        const config = (0, exports.readConfig)();
         await delayAction(config.delay);
         console.info('Collecting PR details');
         const pr = await (0, core_1.getPrInfo)(config);
@@ -9849,11 +9858,11 @@ async function run() {
             body: pr.body,
             config
         });
-        core.setOutput('report', JSON.stringify(report));
         if (report.hasChanged) {
             console.info('Update PR body to save the new state');
             await (0, core_1.updatePr)({ pr, config });
         }
+        core.setOutput('report', JSON.stringify(report));
         core.info('Done ! :)');
     }
     catch (error) {
@@ -9861,6 +9870,7 @@ async function run() {
         if (error instanceof Error)
             core.setFailed(error.message);
     }
+    core.debug('The End!');
 }
 exports.run = run;
 
