@@ -19,7 +19,8 @@ describe('process', () => {
       hasChanged: true,
       state: {
         'run-operation': false
-      }
+      },
+      changed: ['run-operation']
     })
   })
 
@@ -36,7 +37,27 @@ describe('process', () => {
       state: {
         'do-something': false,
         operate: true
-      }
+      },
+      changed: []
+    })
+  })
+
+  it('finds multiple switches with many changes', () => {
+    const body = `
+        PR body
+         - [ ] operate <!-- operate state[x] --> 
+         - [x] do some random task<!-- do-something state[ ] -->                
+    `
+    const report = process({ body, config: cfg })
+
+    expect(report).toEqual({
+      hasChanged: true,
+      state: {
+        'do-something': true,
+        operate: false
+      },
+      // Ensure that the output is in alphabetical order
+      changed: ['do-something', 'operate']
     })
   })
 
@@ -59,7 +80,8 @@ describe('process', () => {
 
     const expectedReport = {
       hasChanged: false,
-      state: {}
+      state: {},
+      changed: []
     }
     expect(report).toEqual(expectedReport)
   })
@@ -81,7 +103,8 @@ describe('process', () => {
       captures: {
         'do-something': 'do some random task',
         operate: 'operate'
-      }
+      },
+      changed: []
     })
   })
 
@@ -109,7 +132,8 @@ describe('process', () => {
       state: {
         lint: true,
         format: true
-      }
+      },
+      changed: ['format', 'lint']
     })
   })
 
@@ -134,7 +158,8 @@ describe('process', () => {
       state: {
         'fancy-test': true,
         'update-changelog': false
-      }
+      },
+      changed: ['fancy-test']
     })
   })
 

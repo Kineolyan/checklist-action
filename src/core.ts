@@ -23,6 +23,7 @@ export type Config = Readonly<{
 export type Report = Readonly<{
   hasChanged: boolean
   state: Record<string, boolean>
+  changed: Readonly<string[]>
   captures?: Record<string, string>
 }>
 
@@ -109,7 +110,10 @@ export function process({
     .map(v => v!)
     .filter(found => belongToNamespace({ config, switchInfo: found }))
 
-  const hasChanged = switches.some(({ before, after }) => before !== after)
+  const changed = switches
+    .filter(({ before, after }) => before !== after)
+    .map(info => info.id)
+  changed.sort()
   const state = switches.reduce(
     (acc, { id, after }) => {
       acc[id] = after
@@ -118,8 +122,9 @@ export function process({
     {} as Record<string, boolean>
   )
   const output = {
-    hasChanged,
-    state
+    hasChanged: changed.length > 0,
+    state,
+    changed
   }
   if (config.captureLabels) {
     const captures = switches.reduce(

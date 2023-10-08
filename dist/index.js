@@ -9718,14 +9718,18 @@ function process({ body: prBody, config }) {
         .filter(found => found !== null)
         .map(v => v)
         .filter(found => belongToNamespace({ config, switchInfo: found }));
-    const hasChanged = switches.some(({ before, after }) => before !== after);
+    const changed = switches
+        .filter(({ before, after }) => before !== after)
+        .map(info => info.id);
+    changed.sort();
     const state = switches.reduce((acc, { id, after }) => {
         acc[id] = after;
         return acc;
     }, {});
     const output = {
-        hasChanged,
-        state
+        hasChanged: changed.length > 0,
+        state,
+        changed
     };
     if (config.captureLabels) {
         const captures = switches.reduce((acc, { id, capture }) => {
