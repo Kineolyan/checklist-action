@@ -133,7 +133,7 @@ describe('process', () => {
         lint: true,
         format: true
       },
-      changed: ['format', 'lint'],
+      changed: ['format', 'lint']
     })
   })
 
@@ -159,7 +159,7 @@ describe('process', () => {
         'fancy-test': true,
         'update-changelog': false
       },
-      changed: ['fancy-test'],
+      changed: ['fancy-test']
     })
   })
 
