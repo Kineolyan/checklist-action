@@ -4,7 +4,7 @@ An action to create switches to control GitHub actions from the body of a Pull R
 
 ## Goals
 
-The `checkswitch` action allows one to parse the body of a Pull Request to retrieve bullet points as configuration toggles.
+`checkswitch-action` allows one to parse the body of a Pull Request to retrieve bullet points as configuration toggles.
 
 For a Pull Request body as below,
 
@@ -23,15 +23,15 @@ the action will extract two switches from the content:
  - a switch name `fancy-test`, that is currently enabled
  - a switch name `update-changelog`, that is currently disabled
 
-This information is made available to subsequent steps in GitHub actions, through steps outputs.
+This information is made available to subsequent steps in GitHub actions, through step outputs.
 
-In addition to reading this information, checkswitch will update the Pull Request body to be able to detect changes to the switches. Using an hidden value, `checkswitch` can report if a given switch has been enabled or disabled by the latest change to the Pull Request body.
+If addition to reading this information, `checkswitch-action` will update the Pull Request body to be able to detect changes to the switches. Using an hidden value, `checkswitch-action` can report if a given switch has been enabled or disabled by the latest change to the Pull Request body.
 
 ## Features
 
  - Detect and report the state of switches in your Pull Requests
-   The output of the action reports the state of each switch, telling whether the switch is enabled.
- - Detect the changes to switches when editing the Pull Requests
+   The output of the action contains the state of each switch, telling whether the switch is enabled.
+ - Detect what changed to switches when editing the Pull Requests
    The output of the action reports if the configuration has been changed since the last execution of the action. It contains a flag marking if something changed and the list of switches that changed.
  - Extract and report the labels of switches
    The labels can optionally be added to the action output. This can be used to pass free-form information to the check, to use in downstream actions or scripts.
@@ -44,12 +44,12 @@ In addition to reading this information, checkswitch will update the Pull Reques
 
 Switches must follow the format below (places to configure are surrounded by `{..}`)
 
-` - [ ] {label of your switch} <!-- {switch id} state[ ] -->
+` - [ ] {label of your switch} <!-- {switch id} state[ ] -->`
 
 The action only supports single-line switches.
 
 The line must start with ` - [ ]`. GitHub automatically converts that into a checkbox. When checked, the text changed to ` - [x]`.<br>
-The action accepts both ` - [ ]` or ` - [x]` as an initial value, allowing Pull Requests to start in a check state.
+The action accepts both ` - [ ]` or ` - [x]` as an initial value, allowing Pull Requests to start in a checked state.
 
 The label of the switch can be anything. The action will capture everything between the checkbox and the start of the HTML comment `<!--`.
 
@@ -82,6 +82,8 @@ permissions:
 
 The above snippet run `checkswitch` in the step `read-switches`. Its output is a JSON containing the result of the action. This output is printed to stdout.
 
+To be able to read and edit the Pull Request bodies, this action must be given write permissions to `contents` and `pull-requests`.
+
 ## Output format
 
 ```json
@@ -91,18 +93,18 @@ The above snippet run `checkswitch` in the step `read-switches`. Its output is a
   "type": "object",
   "properties": {
     "hasChanged": {
-      "description": "Flag indicating whether there are changes to the switches",
+      "description": "Flag indicating whether there are changes to the switch states",
       "type": "boolean"
     },
     "state": {
-      "description": "Map from switch ids to their status.",
+      "description": "Map from switch ids to their statuses",
       "type": "object",
       "additionalProperties": {
         "type": "boolean"
       }
     },
     "changed": {
-      "description": "List of switch ids changed since the last execution. Empty when `hasChanged` is false.",
+      "description": "List of switch ids changed since the last execution. Empty when `hasChanged` is false",
       "type": "array",
       "items": {
         "type": "string"
@@ -128,9 +130,11 @@ The above snippet run `checkswitch` in the step `read-switches`. Its output is a
 
 ## Advanced usage
 
+_All the following features can be used together in a single step._
+
 ### Timeout
 
-`checkswitch-action` allows to define a built-in timeout. This allows to wait for users to make multiple changes to switches (an task that can easily take many seconds on GitHub).
+`checkswitch-action` allows to use the built-in timeout. This allows to wait for users to make multiple changes to switches (a task that can easily take many seconds on GitHub).
 
 ```yaml
 steps:
@@ -138,8 +142,10 @@ steps:
     id: read-switches
     uses: kineolyan/checkswitch-action@1
     with:
-      delay: 100 # delay of 100ms
+      delay: 10000 # delay of 10s
 ```
+
+In the above example, the action will wait for 10 seconds before reading the content of the Pull Request.
 
 This accepts a value in milliseconds. By default, no timeout is applied.
 
@@ -162,7 +168,7 @@ Applied to the following content
  - [x] By-pass checks: accepted <!-- ignore state[ ] -->
 ```
 
-it will return the following output to the field `captures`:
+it will return the following output in the field `captures`:
 
 ```json
 {
@@ -171,7 +177,7 @@ it will return the following output to the field `captures`:
 }
 ```
 
-This example above illustrates a way to complement the switch status with additional information. In this case, the workflow can parse the capture for `ignore`. If it contains `accepted`, the workflow decides not to run tests but still reports them as passed.
+This example above illustrates a way to complement the switch status with additional information. In this example case, the workflow can parse the capture for `ignore`. If it contains `accepted`, it decides not to run tests but still reports them as passed.
 
 By default, the action does not capture anything.
 
@@ -198,4 +204,4 @@ the output will only contain information about `admin/ignore`.
 
 #### Caveats
 
-`checkswitch-action` will conflict when a user edits multiple lists in the same operation. Each workflow will likely be process in different workflows, each updating the Pull Request body at the end.
+`checkswitch-action` will conflict when a user edits multiple lists in the same operation. Each workflow will likely be process in different workflows, each updating the Pull Request body at the end. One can "schedule" the different execution by using different timeouts, or process the list sequentially in the same workflow.
