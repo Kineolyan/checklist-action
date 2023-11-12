@@ -37,7 +37,7 @@ In addition to reading this information, checkswitch will update the Pull Reques
    The labels can optionally be added to the action output. This can be used to pass free-form information to the check, to use in downstream actions or scripts.
  - Group switches into namespaces, to create multiple lists.
 
-## Usage
+## Basic usage
 
 ### Create switches in your Pull Requests
 
@@ -80,3 +80,47 @@ permissions:
 ```
 
 The above snippet run `checkswitch` in the step `read-switches`. Its output is a JSON containing the result of the action. This output is printed to stdout.
+
+## Output format
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Checkswitch output",
+  "type": "object",
+  "properties": {
+    "hasChanged": {
+      "description": "Flag indicating whether there are changes to the switches",
+      "type": "boolean"
+    },
+    "state": {
+      "description": "Map from switch ids to their status.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "changed": {
+      "description": "List of switch ids changed since the last execution. Empty when `hasChanged` is false.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "captures": {
+      "description": "Map from switch ids to their labels. All labels are captured whatever the states of the switches are",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "hasChanged",
+    "state",
+    "changed"
+  ]
+}
+```
