@@ -2,11 +2,15 @@ name: Auto-update
 on:
   push:
     branches:
-      - main
+       main
 
 jobs:
   Auto:
     name: Auto-update
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+ 
     steps:
-      - uses: tibdex/auto-update@v2
+    - uses: tibdex/auto-update@v2
