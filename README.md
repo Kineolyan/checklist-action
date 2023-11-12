@@ -36,6 +36,7 @@ In addition to reading this information, checkswitch will update the Pull Reques
  - Extract and report the labels of switches
    The labels can optionally be added to the action output. This can be used to pass free-form information to the check, to use in downstream actions or scripts.
  - Group switches into namespaces, to create multiple lists.
+ - Handy little timeout to wait for multiple updates to the Pull Request body, when clicking on multiple switches.
 
 ## Basic usage
 
@@ -124,3 +125,77 @@ The above snippet run `checkswitch` in the step `read-switches`. Its output is a
   ]
 }
 ```
+
+## Advanced usage
+
+### Timeout
+
+`checkswitch-action` allows to define a built-in timeout. This allows to wait for users to make multiple changes to switches (an task that can easily take many seconds on GitHub).
+
+```yaml
+steps:
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
+    with:
+      delay: 100 # delay of 100ms
+```
+
+This accepts a value in milliseconds. By default, no timeout is applied.
+
+### Capturing switch labels
+
+`checkswitch-action` allows to capture the label of all switches, whatever their state.
+
+```yaml
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
+    with:
+      capture-labels: true
+```
+
+Applied to the following content
+
+```
+ - [ ] Run tests <!-- test state[ ] -->
+ - [x] By-pass checks: accepted <!-- ignore state[ ] -->
+```
+
+it will return the following output to the field `captures`:
+
+```json
+{
+  "test": "Run tests",
+  "ignore": "By-pass checks: accepted"
+}
+```
+
+This example above illustrates a way to complement the switch status with additional information. In this case, the workflow can parse the capture for `ignore`. If it contains `accepted`, the workflow decides not to run tests but still reports them as passed.
+
+By default, the action does not capture anything.
+
+### Multiple lists with namespaces
+
+`checkswitch-action` allows you to manage multiple lists of switches, using a namespace. Namespaces are defined by switch ids starting with another word followed by a `/`.
+
+```yaml
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
+    with:
+      namespace: admin
+```
+
+Applied to the following content
+
+```
+ - [ ] Run tests <!-- test state[ ] -->
+ - [x] By-pass checks <!-- admin/ignore state[ ] -->
+```
+
+the output will only contain information about `admin/ignore`.
+
+#### Caveats
+
+`checkswitch-action` will conflict when a user edits multiple lists in the same operation. Each workflow will likely be process in different workflows, each updating the Pull Request body at the end.
