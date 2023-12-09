@@ -1,199 +1,207 @@
-# Create a JavaScript Action Using TypeScript
+# Checkswitch
 
-[![GitHub Super-Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
+An action to create switches to control GitHub actions from the body of a Pull Request.
 
-Use this template to bootstrap the creation of a TypeScript action. :rocket:
+## Goals
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+`checkswitch-action` allows one to parse the body of a Pull Request to retrieve bullet points as configuration toggles.
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+For a Pull Request body as below,
 
-## Create Your Own Action
+```
+Some text describing what your PR does, etc
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+Switches for CI
+-------
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
+- [x] Run tests in a fancy CI system <!-- fancy-test state[ ] -->
+- [ ] Update changelog <!-- update-changelog state[ ] -->
+```
 
-## Initial Setup
+the action will extract two switches from the content:
 
-After you've cloned the repository to your local machine or codespace, you'll
-need to perform some initial setup steps before you can develop your action.
+ - a switch name `fancy-test`, that is currently enabled
+ - a switch name `update-changelog`, that is currently disabled
 
-> [!NOTE]
->
-> You'll need to have a reasonably modern version of
-> [Node.js](https://nodejs.org) handy. If you are using a version manager like
-> [`nodenv`](https://github.com/nodenv/nodenv) or
-> [`nvm`](https://github.com/nvm-sh/nvm), you can run `nodenv install` in the
-> root of your repository to install the version specified in
-> [`package.json`](./package.json). Otherwise, 20.x or later should work!
+This information is made available to subsequent steps in GitHub actions, through step outputs.
 
-1. :hammer_and_wrench: Install the dependencies
+If addition to reading this information, `checkswitch-action` will update the Pull Request body to be able to detect changes to the switches. Using an hidden value, `checkswitch-action` can report if a given switch has been enabled or disabled by the latest change to the Pull Request body.
 
-   ```bash
-   npm install
-   ```
+## Features
 
-1. :building_construction: Package the TypeScript for distribution
+ - Detect and report the state of switches in your Pull Requests
+   The output of the action contains the state of each switch, telling whether the switch is enabled.
+ - Detect what changed to switches when editing the Pull Requests
+   The output of the action reports if the configuration has been changed since the last execution of the action. It contains a flag marking if something changed and the list of switches that changed.
+ - Extract and report the labels of switches
+   The labels can optionally be added to the action output. This can be used to pass free-form information to the check, to use in downstream actions or scripts.
+ - Group switches into namespaces, to create multiple lists.
+ - Handy little timeout to wait for multiple updates to the Pull Request body, when clicking on multiple switches.
 
-   ```bash
-   npm run bundle
-   ```
+## Basic usage
 
-1. :white_check_mark: Run the tests
+### Create switches in your Pull Requests
 
-   ```bash
-   $ npm test
+Switches must follow the format below (places to configure are surrounded by `{..}`)
 
-   PASS  ./index.test.js
-     ✓ throws invalid number (3ms)
-     ✓ wait 500 ms (504ms)
-     ✓ test runs (95ms)
+` - [ ] {label of your switch} <!-- {switch id} state[ ] -->`
 
-   ...
-   ```
+The action only supports single-line switches.
 
-## Update the Action Metadata
+The line must start with ` - [ ]`. GitHub automatically converts that into a checkbox. When checked, the text changed to ` - [x]`.<br>
+The action accepts both ` - [ ]` or ` - [x]` as an initial value, allowing Pull Requests to start in a checked state.
 
-The [`action.yml`](action.yml) file defines metadata about your action, such as
-input(s) and output(s). For details about this file, see
-[Metadata syntax for GitHub Actions](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions).
+The label of the switch can be anything. The action will capture everything between the checkbox and the start of the HTML comment `<!--`.
 
-When you copy this repository, update `action.yml` with the name, description,
-inputs, and outputs for your action.
+The switch id must be a single word, maid of letters, numbers and `-` or `_`.
 
-## Update the Action Code
+The section `state[ ]` is used internally by this action to detect the change to each switch state. `checkswitch` will automatically update this section as part of its work.
 
-The [`src/`](./src/) directory is the heart of your action! This contains the
-source code that will be run when your action is invoked. You can replace the
-contents of this directory with your own code.
+_**Warning**: lines not complying to the syntax of a switch line are ignored by this action._
 
-There are a few things to keep in mind when writing your action code:
+### Use the action in your workflows
 
-- Most GitHub Actions toolkit and CI/CD operations are processed asynchronously.
-  In `main.ts`, you will see that the action is run in an `async` function.
+```yaml
+steps:
+  # Any step needed before, like actions/checkout
 
-  ```javascript
-  import * as core from '@actions/core'
-  //...
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
 
-  async function run() {
-    try {
-      //...
-    } catch (error) {
-      core.setFailed(error.message)
+  - name: Print Output
+    id: output-in-sh
+    run: echo "${{ steps.read-switches.outputs.report }}"
+
+  # Any step needed after
+
+permissions:
+  contents: write
+  pull-requests: write
+```
+
+The above snippet run `checkswitch` in the step `read-switches`. Its output is a JSON containing the result of the action. This output is printed to stdout.
+
+To be able to read and edit the Pull Request bodies, this action must be given write permissions to `contents` and `pull-requests`.
+
+## Output format
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Checkswitch output",
+  "type": "object",
+  "properties": {
+    "hasChanged": {
+      "description": "Flag indicating whether there are changes to the switch states",
+      "type": "boolean"
+    },
+    "state": {
+      "description": "Map from switch ids to their statuses",
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "changed": {
+      "description": "List of switch ids changed since the last execution. Empty when `hasChanged` is false",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "captures": {
+      "description": "Map from switch ids to their labels. All labels are captured whatever the states of the switches are",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
     }
-  }
-  ```
+  },
+  "required": [
+    "hasChanged",
+    "state",
+    "changed"
+  ]
+}
+```
 
-  For more information about the GitHub Actions toolkit, see the
-  [documentation](https://github.com/actions/toolkit/blob/master/README.md).
+## Advanced usage
 
-So, what are you waiting for? Go ahead and start customizing your action!
+_All the following features can be used together in a single step._
 
-1. Create a new branch
+### Timeout
 
-   ```bash
-   git checkout -b releases/v1
-   ```
-
-1. Replace the contents of `src/` with your action code
-1. Add tests to `__tests__/` for your source code
-1. Format, test, and build the action
-
-   ```bash
-   npm run all
-   ```
-
-   > [!WARNING]
-   >
-   > This step is important! It will run [`ncc`](https://github.com/vercel/ncc)
-   > to build the final JavaScript action code with all dependencies included.
-   > If you do not run this step, your action will not work correctly when it is
-   > used in a workflow. This step also includes the `--license` option for
-   > `ncc`, which will create a license file for all of the production node
-   > modules used in your project.
-
-1. Commit your changes
-
-   ```bash
-   git add .
-   git commit -m "My first action is ready!"
-   ```
-
-1. Push them to your repository
-
-   ```bash
-   git push -u origin releases/v1
-   ```
-
-1. Create a pull request and get feedback on your action
-1. Merge the pull request into the `main` branch
-
-Your action is now published! :rocket:
-
-For information about versioning your action, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-## Validate the Action
-
-You can now validate the action by referencing it in a workflow file. For
-example, [`ci.yml`](./.github/workflows/ci.yml) demonstrates how to reference an
-action in the same repository.
+`checkswitch-action` allows to use the built-in timeout. This allows to wait for users to make multiple changes to switches (a task that can easily take many seconds on GitHub).
 
 ```yaml
 steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v3
-
-  - name: Test Local Action
-    id: test-action
-    uses: ./
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
     with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+      delay: 10000 # delay of 10s
 ```
 
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/typescript-action/actions)! :rocket:
+In the above example, the action will wait for 10 seconds before reading the content of the Pull Request.
 
-## Usage
+This accepts a value in milliseconds. By default, no timeout is applied.
 
-After testing, you can create version tag(s) that developers can use to
-reference different stable versions of your action. For more information, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
+### Capturing switch labels
 
-To include the action in a workflow in another repository, you can use the
-`uses` syntax with the `@` symbol to reference a specific branch, tag, or commit
-hash.
+`checkswitch-action` allows to capture the label of all switches, whatever their state.
 
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v3
-
-  - name: Test Local Action
-    id: test-action
-    uses: actions/typescript-action@v1 # Commit with the `v1` tag
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
     with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+      capture-labels: true
 ```
+
+Applied to the following content
+
+```
+ - [ ] Run tests <!-- test state[ ] -->
+ - [x] By-pass checks: accepted <!-- ignore state[ ] -->
+```
+
+it will return the following output in the field `captures`:
+
+```json
+{
+  "test": "Run tests",
+  "ignore": "By-pass checks: accepted"
+}
+```
+
+This example above illustrates a way to complement the switch status with additional information. In this example case, the workflow can parse the capture for `ignore`. If it contains `accepted`, it decides not to run tests but still reports them as passed.
+
+By default, the action does not capture anything.
+
+### Multiple lists with namespaces
+
+`checkswitch-action` allows you to manage multiple lists of switches, using a namespace. Namespaces are defined by switch ids starting with another word followed by a `/`.
+
+```yaml
+  - name: Read switches
+    id: read-switches
+    uses: kineolyan/checkswitch-action@1
+    with:
+      namespace: admin
+```
+
+Applied to the following content
+
+```
+ - [ ] Run tests <!-- test state[ ] -->
+ - [x] By-pass checks <!-- admin/ignore state[ ] -->
+```
+
+the output will only contain information about `admin/ignore`.
+
+#### Caveats
+
+`checkswitch-action` will conflict when a user edits multiple lists in the same operation. Each workflow will likely be process in different workflows, each updating the Pull Request body at the end. One can "schedule" the different execution by using different timeouts, or process the list sequentially in the same workflow.
